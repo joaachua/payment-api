@@ -48,16 +48,23 @@ public class Payment {
     @Column(name = "request_hash", nullable = false)
     private String requestHash;
 
-    public Payment() {
+    protected Payment() {
     }
 
-    public Payment(BigDecimal amount, String currency) {
+    public Payment(
+            BigDecimal amount,
+            String currency,
+            String idempotencyKey,
+            String requestHash) {
+
         this.reference = "PAY-" + UUID.randomUUID();
         this.amount = amount;
         this.currency = currency;
         this.status = PaymentStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.idempotencyKey = idempotencyKey;
+        this.requestHash = requestHash;
     }
 
     public void markSuccessful() {

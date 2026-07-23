@@ -48,16 +48,11 @@ public class PaymentService {
                     return PaymentResponse.from(existingPayment);
                 })
                 .orElseGet(() -> {
-                    Payment payment = new Payment();
-
-                    payment.setIdempotencyKey(idempotencyKey);
-                    payment.setRequestHash(requestHash);
-                    payment.setAmount(request.amount());
-                    payment.setCurrency(
-                            request.currency()
-                                    .trim()
-                                    .toUpperCase());
-                    payment.setStatus(PaymentStatus.PENDING);
+                    Payment payment = new Payment(
+                            request.amount(),
+                            request.currency().trim().toUpperCase(),
+                            idempotencyKey,
+                            requestHash);
 
                     Payment savedPayment = paymentRepository.save(payment);
 
