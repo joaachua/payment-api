@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: payment-api-mysql
+
+    environment:
+      MYSQL_DATABASE: payment_api
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_password
+      MYSQL_ROOT_PASSWORD: root_password
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - payment_mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-proot_password"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  payment-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: payment-api-app
+
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/payment_api
+      DB_USERNAME: payment_user
+      DB_PASSWORD: payment_password
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  payment_mysql_data:
