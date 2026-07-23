@@ -42,7 +42,13 @@ public class Payment {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    protected Payment() {
+    @Column(name = "idempotency_key", nullable = false, unique = true)
+    private String idempotencyKey;
+
+    @Column(name = "request_hash", nullable = false)
+    private String requestHash;
+
+    public Payment() {
     }
 
     public Payment(BigDecimal amount, String currency) {
@@ -95,5 +101,33 @@ public class Payment {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getRequestHash() {
+        return requestHash;
+    }
+
+    public void setRequestHash(String requestHash) {
+        this.requestHash = requestHash;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public void setStatus(PaymentStatus status) {
+        this.status = status;
     }
 }

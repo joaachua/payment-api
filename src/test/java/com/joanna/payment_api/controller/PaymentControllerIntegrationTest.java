@@ -1,5 +1,6 @@
 package com.joanna.payment_api.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -45,6 +46,7 @@ class PaymentControllerIntegrationTest {
                 """;
 
         mockMvc.perform(post("/api/payments")
+                .header("Idempotency-Key", "test-key-001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andExpect(status().isCreated())
@@ -64,6 +66,7 @@ class PaymentControllerIntegrationTest {
                 """;
 
         MvcResult createResult = mockMvc.perform(post("/api/payments")
+                .header("Idempotency-Key", "test-key-001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andExpect(status().isCreated())
@@ -93,6 +96,7 @@ class PaymentControllerIntegrationTest {
                 """;
 
         mockMvc.perform(post("/api/payments")
+                .header("Idempotency-Key", "test-key-001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andExpect(status().isBadRequest());
@@ -103,4 +107,36 @@ class PaymentControllerIntegrationTest {
         mockMvc.perform(get("/api/payments/999999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void shouldNotCreateDuplicatePayment()
+            throws Exception {
+
+        String requestBody = """
+                {
+                    "amount": 100.00,
+                    "currency": "MYR"
+                }
+                """;
+
+        mockMvc.perform(post("/api/payments")
+                .header("Idempotency-Key", "order-1001")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/payments")
+                .header("Idempotency-Key", "order-1001")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andExpect(status().isCreated());
+
+        assertEquals(1, paymentRepository.count());
+    }
+
+    // TODO shouldConfirmPendingPayment
+    // TODOshouldFailPendingPayment
+    // TODOshouldRefundSuccessfulPayment
+    // TODOshouldRejectDoubleConfirmation
+    // TODOshouldRejectRefundOfPendingPayment
 }

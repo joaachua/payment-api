@@ -1,5 +1,10 @@
 package com.joanna.payment_api.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +26,43 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse createPayment(CreatePaymentRequest request) {
+    public PaymentResponse createPayment(
+            String idempotencyKey,
+            CreatePaymentRequest request) {
 
-        Payment payment = new Payment(
-                request.amount(),
-                request.currency());
+        String requestHash = generateRequestHash(request);
 
-        Payment savedPayment = paymentRepository.save(payment);
+        return paymentRepository
+                .findByIdempotencyKey(idempotencyKey)
+                .map(existingPayment -> {
 
-        return PaymentResponse.from(savedPayment);
+                    if (!existingPayment
+                            .getRequestHash()
+                            .equals(requestHash)) {
+
+                        throw new InvalidPaymentStateException(
+                                "Idempotency key was already used "
+                                        + "with a different request");
+                    }
+
+                    return PaymentResponse.from(existingPayment);
+                })
+                .orElseGet(() -> {
+                    Payment payment = new Payment();
+
+                    payment.setIdempotencyKey(idempotencyKey);
+                    payment.setRequestHash(requestHash);
+                    payment.setAmount(request.amount());
+                    payment.setCurrency(
+                            request.currency()
+                                    .trim()
+                                    .toUpperCase());
+                    payment.setStatus(PaymentStatus.PENDING);
+
+                    Payment savedPayment = paymentRepository.save(payment);
+
+                    return PaymentResponse.from(savedPayment);
+                });
     }
 
     @Transactional(readOnly = true)
@@ -88,5 +121,27 @@ public class PaymentService {
     private Payment findPayment(Long id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new PaymentNotFoundException(id));
+    }
+
+    private String generateRequestHash(
+            CreatePaymentRequest request) {
+
+        String requestData = request.amount().toPlainString()
+                + "|"
+                + request.currency().trim().toUpperCase();
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            byte[] hashBytes = digest.digest(
+                    requestData.getBytes(StandardCharsets.UTF_8));
+
+            return HexFormat.of().formatHex(hashBytes);
+
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                    "SHA-256 algorithm is unavailable",
+                    exception);
+        }
     }
 }
