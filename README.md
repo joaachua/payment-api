@@ -11,16 +11,46 @@ A Spring Boot REST API for handling payment creation, confirmation, failure, ref
 - MySQL
 - Maven
 
-## Planned Features
+## Implemented Features
 
-- Create payments
+- Create a payment
 - Retrieve payment details
-- Confirm or fail payments
-- Process refunds
+- Confirm a pending payment
+- Mark a pending payment as failed
+- Refund a successful payment
 - Validate payment status transitions
-- Handle duplicate requests using idempotency keys
-- Process payment gateway webhooks
-- Add automated tests
+- Validate incoming payment requests
+- Return structured API errors
+- Persist payment data using MySQL
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/payments` | Create a payment |
+| GET | `/api/payments/{id}` | Retrieve a payment |
+| POST | `/api/payments/{id}/confirm` | Confirm a pending payment |
+| POST | `/api/payments/{id}/fail` | Mark a pending payment as failed |
+| POST | `/api/payments/{id}/refund` | Refund a successful payment |
+
+## Create Payment
+
+### Request
+
+```json
+{
+  "amount": 100.00,
+  "currency": "MYR"
+}
+```
+
+## Roadmap
+
+- Idempotency key support
+- Payment gateway webhook simulation
+- Dockerized application setup
+- Expanded automated test coverage
+- CI pipeline
 
 ## Payment Flow
 
@@ -31,6 +61,20 @@ PENDING → SUCCESS → REFUNDED
 ```
 
 ## Running Locally
+
+### Requirements
+
+- Java 21
+- MySQL 8
+- Maven, or the included Maven wrapper
+
+### Database
+
+Create a MySQL database:
+
+```sql
+CREATE DATABASE payment_api;
+```
 
 ```bash
 ./mvnw spring-boot:run
